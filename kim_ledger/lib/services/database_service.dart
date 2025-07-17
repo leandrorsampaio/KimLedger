@@ -54,6 +54,47 @@ class DatabaseService {
         FOREIGN KEY (category_id) REFERENCES categories (id)
       )
     ''');
+    // Add dummy data after creating tables
+    await _addDummyData(db);
+  }
+
+  /// Adds some initial data for demonstration purposes.
+  Future<void> _addDummyData(Database db) async {
+    // Add some categories
+    await db.insert('categories', {'name': 'Groceries'});
+    await db.insert('categories', {'name': 'Utilities'});
+    await db.insert('categories', {'name': 'Transport'});
+    await db.insert('categories', {'name': 'Entertainment'});
+
+    // Add some expenses
+    await db.insert('expenses', {
+      'description': 'Weekly groceries',
+      'value': 150.75,
+      'user': 'Leandro',
+      'date': DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
+      'category_id': 1
+    });
+    await db.insert('expenses', {
+      'description': 'Electricity bill',
+      'value': 75.50,
+      'user': 'Leandro',
+      'date': DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
+      'category_id': 2
+    });
+    await db.insert('expenses', {
+      'description': 'Train ticket',
+      'value': 22.00,
+      'user': 'Leandro',
+      'date': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+      'category_id': 3
+    });
+    await db.insert('expenses', {
+      'description': 'Movie night',
+      'value': 45.00,
+      'user': 'Leandro',
+      'date': DateTime.now().subtract(const Duration(days: 10)).toIso8601String(),
+      'category_id': 4
+    });
   }
 
   // --- Category Operations ---
@@ -92,5 +133,13 @@ class DatabaseService {
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  /// Deletes the database file.
+  Future<void> deleteDB() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'finances.db');
+    await deleteDatabase(path);
+    _database = null; // Reset the database instance
   }
 }

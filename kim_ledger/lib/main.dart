@@ -4,8 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'services/data_provider.dart';
+import 'services/database_service.dart';
 
-void main() {
+void main() async {
+  // Ensure that Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Delete the old database to start fresh
+  await DatabaseService.instance.deleteDB();
+
   runApp(const MyApp());
 }
 
