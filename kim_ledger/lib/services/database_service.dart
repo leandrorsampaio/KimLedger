@@ -2,6 +2,7 @@
 
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:path/path.dart';
+import 'dart:io';
 import '../models/category.dart';
 import '../models/expense.dart';
 
@@ -21,10 +22,34 @@ class DatabaseService {
     return _database!;
   }
 
+  /// Gets the directory where the executable is located
+  Future<String> _getExecutableDirectory() async {
+    try {
+      // Get the directory where the current executable is located
+      final executablePath = Platform.resolvedExecutable;
+      final executableDir = Directory(executablePath).parent.path;
+      print('Executable directory: $executableDir'); // Debug log
+      return executableDir;
+    } catch (e) {
+      print('Error getting executable directory, falling back to current directory: $e');
+      // Fallback to current directory if we can't get executable path
+      return Directory.current.path;
+    }
+  }
+
   /// Initializes the encrypted SQLite database.
   Future<Database> _initDB(String filePath, String password) async {
-    final dbPath = await getDatabasesPath();
+    // Use the executable directory instead of system databases path
+    final dbPath = await _getExecutableDirectory();
     final path = join(dbPath, filePath);
+    
+    print('Database will be stored at: $path'); // Debug log
+    
+    // Create the directory if it doesn't exist
+    final dbDir = Directory(dirname(path));
+    if (!await dbDir.exists()) {
+      await dbDir.create(recursive: true);
+    }
 
     return await openDatabase(
       path,
@@ -113,20 +138,34 @@ class DatabaseService {
   // --- Expense Operations ---
 
   Future<void> addExpense(Expense expense) async {
-    final db = await instance.database;
-    await db.insert('expenses', expense.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    try {
+      final db = await instance.database;
+      print('Adding expense: ${expense.toMap()}'); // Debug log
+      final result = await db.insert('expenses', expense.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Expense added with ID: $result'); // Debug log
+    } catch (e) {
+      print('Error adding expense: $e'); // Debug log
+      rethrow;
+    }
   }
 
   Future<List<Expense>> getExpenses() async {
-    final db = await instance.database;
-    // Use a rawQuery with a JOIN to fetch the category name along with the expense data.
-    final result = await db.rawQuery('''
-      SELECT e.*, c.name as categoryName 
-      FROM expenses e
-      JOIN categories c ON e.category_id = c.id
-      ORDER BY e.date DESC
-    ''');
-    return result.isNotEmpty ? result.map((json) => Expense.fromMap(json)).toList() : [];
+    try {
+      final db = await instance.database;
+      print('Fetching expenses from database...'); // Debug log
+      // Use a rawQuery with a JOIN to fetch the category name along with the expense data.
+      final result = await db.rawQuery('''
+        SELECT e.*, c.name as categoryName 
+        FROM expenses e
+        JOIN categories c ON e.category_id = c.id
+        ORDER BY e.date DESC
+      ''');
+      print('Found ${result.length} expenses'); // Debug log
+      return result.isNotEmpty ? result.map((json) => Expense.fromMap(json)).toList() : [];
+    } catch (e) {
+      print('Error fetching expenses: $e'); // Debug log
+      return [];
+    }
   }
 
   /// Closes the database connection.
@@ -137,8 +176,9 @@ class DatabaseService {
 
   /// Deletes the database file.
   Future<void> deleteDB() async {
-    final dbPath = await getDatabasesPath();
+    final dbPath = await _getExecutableDirectory();
     final path = join(dbPath, 'finances.db');
+    print('Deleting database at: $path'); // Debug log
     await deleteDatabase(path);
     _database = null; // Reset the database instance
   }

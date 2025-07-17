@@ -10,8 +10,9 @@ void main() async {
   // Ensure that Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Delete the old database to start fresh
-  await DatabaseService.instance.deleteDB();
+  // NOTE: Database deletion is disabled to preserve data between app restarts
+  // Uncomment the line below only if you want to reset the database for development
+  // await DatabaseService.instance.deleteDB();
 
   runApp(const MyApp());
 }
