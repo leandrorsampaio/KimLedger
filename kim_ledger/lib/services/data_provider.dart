@@ -1,6 +1,6 @@
 // lib/services/data_provider.dart
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import '../models/category.dart';
 import '../models/expense.dart';
 import 'database_service.dart';
